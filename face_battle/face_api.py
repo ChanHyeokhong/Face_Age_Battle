@@ -1,32 +1,20 @@
-import json
+from PIL import Image, ImageFilter
 import sys
-import argparse
 import requests
-from PIL import Image, ImageDraw, ImageFont
-from io import BytesIO
+import argparse
+from collections import ChainMap
 
-with open('../Face_Age_Battle/KEY.json','r') as f:
-    KEY = json.loads(f.read())
-
-def get_KEY(name, KEY=KEY):
-    try:
-        return KEY['MYAPP_KEY']
-    except:
-        raise ImportError("KEY NAME : {0} is not matched".format(name))
 
 API_URL = 'https://kapi.kakao.com/v1/vision/face/detect'
-MYAPP_KEY = get_KEY('MYAPP_KEY')
+MYAPP_KEY = '5da57c0ae4fcf77e767e2df44ca0bd62'
 
 def detect_face(filename):
-    headers = {'Authorization': 'KakaoAK {}'.format(MYAPP_KEY)}
+    headers = {'Authorization' : 'KakaoAK {}' .format(MYAPP_KEY)}
 
-    try:
+    try :
         files = { 'file' : open(filename, 'rb')}
-        #files = { 'image_url' : filename}
         resp = requests.post(API_URL, headers=headers, files=files)
         resp.raise_for_status()
-
-        #print(resp.json())
         return resp.json()
     except Exception as e:
         print(str(e))
@@ -34,31 +22,28 @@ def detect_face(filename):
 
 def mosaic(filename, detection_result):
     image = Image.open(filename)
-
-    for face in detection_result['result']['faces']:
-        x = int(face['x']*image.width)
-        w = int(face['w']*image.width)
-        y = int(face['y']*image.height)
-        h = int(face['h']*image.height)
-        box = image.crop((x,y,x+w, y+h))
-        box = box.resize((20,20), Image.NEAREST).resize((w,h), Image.NEAREST)
-        image.paste(box, (x,y,x+w, y+h))
-
     return image
 
+def imageFind(requests):#request는 받는 사진 을 뜻함 "~.jpg"형식으로 받아야함 더블쿼테이션 필수
+    if __name__ == "__main__":
+        parser = argparse.ArgumentParser(description='Mosaic faces.')
+        parser.add_argument('image_file', type=str, nargs='?', default=requests,
+                            help='image file to hide faces')
+        args = parser.parse_args()
+        detection_result = detect_face(args.image_file)
 
+        a={}
+        a=detection_result['result']['faces']
+        b= ChainMap(*a)
+        c=b['facial_attributes']['gender']
+        male=c['male']
+        female=c['female']
+        d=b['facial_attributes']
+        age=d['age']
+        score=b['score']
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Mosaic faces.')
-    parser.add_argument('image_file', type=str, nargs='?',
-                        default="./migrations/seka.jpg",
-                        help='image file to hide faces')
+        face_info={'male':male, 'female':female,'age':age,'score':score}
+        return(face_info)
+#result,faces,facial_attribute,gender male 또는 female
 
-    args = parser.parse_args()
-
-    detection_result = detect_face(args.image_file)
-    image = mosaic(args.image_file, detection_result)
-    image.show()
-
-    for i in range(4):
-        print(detection_result['result']['faces'][i]['facial_attributes'])
+#찬혁
